@@ -1,7 +1,7 @@
 # configured aws provider with proper credentials
 provider "aws" {
   region    = "us-east-1"
-  profile   = "yusuf"
+  profile   = "akanjiKP"
 }
 
 
@@ -41,7 +41,16 @@ resource "aws_security_group" "ec2_security_group_jenkins" {
     to_port          = 8080
     protocol         = "tcp"
     cidr_blocks      = ["0.0.0.0/0"]
+
+# allow access on port 80
+ingress {
+  from_port   = 80
+  to_port     = 80
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}
   }
+
 
   # allow access on port 22
   ingress {
@@ -89,7 +98,7 @@ resource "aws_instance" "ec2_instance" {
   instance_type          = "t2.small"
   subnet_id              = aws_default_subnet.default_az1.id
   vpc_security_group_ids = [aws_security_group.ec2_security_group_jenkins.id]
-  key_name               = "devopskeypair"
+  key_name               = "akanjiKP"
   # user_data            = file("install_jenkins.sh")
 
   tags = {
@@ -105,7 +114,7 @@ resource "null_resource" "name" {
   connection {
     type        = "ssh"
     user        = "ubuntu"
-    private_key = file("~/Downloads/devopskeypair.pem")
+    private_key = file("~/Downloads/akanjiKP.pem")
     host        = aws_instance.ec2_instance.public_ip
   }
 
