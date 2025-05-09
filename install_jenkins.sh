@@ -53,4 +53,3 @@ echo 'clearing screen...' && sleep 5
 clear
 echo 'jenkins is installed'
 echo 'this is the default password :' $(sudo cat /var/lib/jenkins/secrets/initialAdminPassword)
-sudo systemctl restart docker
