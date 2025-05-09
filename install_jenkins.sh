@@ -1,55 +1,94 @@
 #!/bin/bash
-sudo apt update
-sudo apt install openjdk-17-jre-headless -y
-sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 5BA31D57EF5975CA
-wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
-sudo sh -c 'echo deb http://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
-sudo apt install ca-certificates
-sudo apt update
-sudo apt install git -y
-sudo apt install maven -y
-sudo sh -c 'echo deb https://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
-sudo apt update
-sudo apt install jenkins -y
+set -e
+
+echo "Starting full setup: Jenkins + Terraform + Docker + Kubectl + Helm"
+
+# Update system and install base tools
 sudo apt-get update -y
-wget -O- https://apt.releases.hashicorp.com/gpg | \
-    gpg --dearmor | \
-    sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
-gpg --no-default-keyring \
-    --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg \
-    --fingerprint
+sudo apt-get install -y git curl unzip gnupg apt-transport-https ca-certificates software-properties-common lsb-release
+
+# ---------------------------------
+# Install Java (Jenkins requirement)
+# ---------------------------------
+sudo apt install -y openjdk-17-jre-headless
+
+# ---------------------------------
+# Install Jenkins
+# ---------------------------------
+wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | \
+  gpg --dearmor | \
+  sudo tee /usr/share/keyrings/jenkins-keyring.gpg > /dev/null
+
+echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.gpg] https://pkg.jenkins.io/debian-stable binary/" | \
+  sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
+
+sudo apt-get update -y
+sudo apt-get install -y jenkins
+
+# ---------------------------------
+# Install Terraform
+# ---------------------------------
+wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | \
+  sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+
 echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \
-    https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
-    sudo tee /etc/apt/sources.list.d/hashicorp.list
-sudo apt update
-sudo apt install terraform -y
-sudo apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common -y
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-sudo apt-key fingerprint 0EBFCD88
+https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
+  sudo tee /etc/apt/sources.list.d/hashicorp.list > /dev/null
+
 sudo apt-get update -y
-sudo apt-get install docker-ce docker-ce-cli containerd.io -y
+sudo apt-get install -y terraform
+
+# ---------------------------------
+# Install Docker
+# ---------------------------------
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+  sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+echo \
+  "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] \
+  https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt-get update -y
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+
+# Add Jenkins and Ubuntu users to docker group
 sudo usermod -aG docker jenkins
 sudo usermod -aG docker ubuntu
-sudo usermod -aG docker $USER
-curl -LO https://dl.k8s.io/release/v1.21.0/bin/linux/amd64/kubectl
-curl -LO "https://dl.k8s.io/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"
+
+# ---------------------------------
+# Install kubectl
+# ---------------------------------
+curl -LO "https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+curl -LO "https://dl.k8s.io/release/stable.txt"
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-chmod +x kubectl
-mkdir -p ~/.local/bin
-mv ./kubectl ~/.local/bin/kubectl
-sudo apt-get update
-sudo apt-get install -y ca-certificates curl
-sudo apt-get install -y apt-transport-https
-sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
-echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-sudo apt-get update -y
-sudo apt-get install -y kubectl=1.21.0-00
-sudo apt install awscli -y
-wget https://get.helm.sh/helm-v3.2.4-linux-amd64.tar.gz
-tar -zxvf helm-v3.2.4-linux-amd64.tar.gz
+rm kubectl
+
+# ---------------------------------
+# Install Helm
+# ---------------------------------
+HELM_VERSION="v3.12.3"
+wget https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz
+tar -zxvf helm-${HELM_VERSION}-linux-amd64.tar.gz
 sudo mv linux-amd64/helm /usr/local/bin/helm
-echo 'clearing screen...' && sleep 5
-clear
-echo 'jenkins is installed'
-echo 'this is the default password :' $(sudo cat /var/lib/jenkins/secrets/initialAdminPassword)
+rm -rf helm-${HELM_VERSION}-linux-amd64.tar.gz linux-amd64
+
+# ---------------------------------
+# AWS CLI
+# ---------------------------------
+sudo apt-get install -y awscli
+
+# ---------------------------------
+# Done
+# ---------------------------------
+echo 'All tools installed successfully.'
+echo 'Starting Jenkins service...'
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+
+echo 'Jenkins is installed and running.'
+echo 'Default Jenkins password:'
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+sudo systemctl daemon-reload
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
