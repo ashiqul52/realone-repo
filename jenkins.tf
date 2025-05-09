@@ -41,17 +41,7 @@ resource "aws_security_group" "ec2_security_group_jenkins" {
     to_port          = 8080
     protocol         = "tcp"
     cidr_blocks      = ["0.0.0.0/0"]
-
-# allow access on port 80
-ingress {
-  description = "Allow HTTP traffic"
-  from_port   = 80
-  to_port     = 80
-  protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
-}
   }
-
 
   # allow access on port 22
   ingress {
@@ -99,7 +89,7 @@ resource "aws_instance" "ec2_instance" {
   instance_type          = "t2.small"
   subnet_id              = aws_default_subnet.default_az1.id
   vpc_security_group_ids = [aws_security_group.ec2_security_group_jenkins.id]
-  key_name               = "akanjiKP"
+  key_name               = "ashiq"
   # user_data            = file("install_jenkins.sh")
 
   tags = {
@@ -109,33 +99,31 @@ resource "aws_instance" "ec2_instance" {
 
 
 # an empty resource block
-resource "null_resource" "name" {
+resource "null_resource" "jenkins_provisioner" {
+  count = 0  # disables this block
 
-  # ssh into the ec2 instance 
   connection {
     type        = "ssh"
     user        = "ubuntu"
-    private_key = file("~/Downloads/akanjiKP.pem")
-    host        = aws_instance.ec2_instance.public_ip
+    private_key = file("C:/Users/Downloads/akanjiKP.pem")
+    host        = aws_instance.jenkins_instance.public_ip
   }
 
-  # copy the install_jenkins.sh file from your computer to the ec2 instance 
   provisioner "file" {
     source      = "install_jenkins.sh"
     destination = "/tmp/install_jenkins.sh"
   }
 
-  # set permissions and run the install_jenkins.sh file
   provisioner "remote-exec" {
     inline = [
-        "sudo chmod +x /tmp/install_jenkins.sh",
-        "sh /tmp/install_jenkins.sh",
+      "sudo chmod +x /tmp/install_jenkins.sh",
+      "sh /tmp/install_jenkins.sh"
     ]
   }
 
-  # wait for ec2 to be created
-  depends_on = [aws_instance.ec2_instance]
+  depends_on = [aws_instance.jenkins_instance]
 }
+
 
 
 # print the url of the jenkins server
