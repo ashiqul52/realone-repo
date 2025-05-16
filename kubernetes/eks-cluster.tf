@@ -15,7 +15,7 @@ module "eks" {
   }
   
 
-  cluster_name = "myAppp-eks-cluster"  
+  cluster_name = "myAppp-eks-cluster1"  
   cluster_version = "1.27"
 
   subnet_ids = module.myAppp-vpc.private_subnets
