@@ -20,16 +20,16 @@ module "myAppp-vpc" {
     enable_dns_hostnames = true
 
     tags = {
-        "kubernetes.io/cluster/myAppp-eks-cluster" = "shared"
+        "kubernetes.io/cluster/myAppp-eks-cluster1" = "shared"
     }
 
     public_subnet_tags = {
-        "kubernetes.io/cluster/myAppp-eks-cluster" = "shared"
+        "kubernetes.io/cluster/myAppp-eks-cluster1" = "shared"
         "kubernetes.io/role/elb" = 1 
     }
 
     private_subnet_tags = {
-        "kubernetes.io/cluster/myAppp-eks-cluster" = "shared"
+        "kubernetes.io/cluster/myAppp-eks-cluster1" = "shared"
         "kubernetes.io/role/internal-elb" = 1 
     }
 
