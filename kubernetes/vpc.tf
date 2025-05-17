@@ -24,8 +24,8 @@ module "myAppp-vpc" {
     }
 
     public_subnet_tags = {
-        "kubernetes.io/cluster/myAppp-eks-cluster1" = "shared"
-        "kubernetes.io/role/elb" = 1 
+        "kubernetes.io/cluster/myAppp-eks-cluster1" = "owned"
+        "kubernetes.io/role/elb" = "1" 
     }
 
     private_subnet_tags = {
